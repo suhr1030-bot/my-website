@@ -239,17 +239,17 @@
             const options = { maintainAspectRatio: false, cutout: '65%', plugins: { legend: { display: false }, datalabels: { display: false } }, onHover: (e, el) => { e.native.target.style.cursor = el.length ? 'pointer' : 'default'; } };
 
             return (
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col h-full">
-                    <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">{Icon && <Icon />} {title}</h3>
-                    <div className="flex flex-col sm:flex-row items-center gap-6 flex-grow">
-                        <div className="w-full sm:w-1/2 h-48 relative">
+                <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col h-full">
+                    <h3 className="text-base sm:text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">{Icon && <Icon />} {title}</h3>
+                    <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 flex-grow">
+                        <div className="w-full sm:w-1/2 h-40 sm:h-48 relative shrink-0">
                             <ChartComponent type="doughnut" data={data} options={options} onElementClick={onSelect} />
                             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                                 <span className="text-xs text-slate-400 font-medium">總計</span>
-                                <span className="text-2xl font-bold text-slate-700">{total}</span>
+                                <span className="text-xl sm:text-2xl font-bold text-slate-700">{total}</span>
                             </div>
                         </div>
-                        <div className="w-full sm:w-1/2 space-y-3 overflow-y-auto max-h-48 pr-2">
+                        <div className="w-full sm:w-1/2 space-y-2 sm:space-y-3 overflow-y-auto max-h-40 sm:max-h-48 pr-1 sm:pr-2">
                             {data.labels.map((label, idx) => {
                                 const value = data.datasets[0].data[idx];
                                 const color = Array.isArray(data.datasets[0].backgroundColor) ? data.datasets[0].backgroundColor[idx] : data.datasets[0].backgroundColor;
@@ -398,6 +398,18 @@
                 if (savedUrl) {
                     setSheetUrl(savedUrl);
                 }
+                
+                const handleResize = () => {
+                    if (window.innerWidth < 768) {
+                        setSidebarOpen(false);
+                    } else {
+                        setSidebarOpen(true);
+                    }
+                };
+                window.addEventListener('resize', handleResize);
+                handleResize(); // Initialize on mount
+                
+                return () => window.removeEventListener('resize', handleResize);
             }, []);
 
             const toggleFilter = (category, value) => {
@@ -684,27 +696,41 @@
                         onConfigChange={setDashboardConfig}
                     />
 
-                    <aside className={`${sidebarOpen ? 'w-64' : 'w-20'} bg-slate-900 text-white transition-all duration-300 flex flex-col z-20 shadow-xl`}>
-                        <div className="h-16 flex items-center justify-center border-b border-slate-800">
+                    {/* Mobile Sidebar Overlay */}
+                    {sidebarOpen && (
+                        <div 
+                            className="fixed inset-0 bg-slate-900/50 z-20 md:hidden backdrop-blur-sm transition-opacity"
+                            onClick={() => setSidebarOpen(false)}
+                        ></div>
+                    )}
+
+                    <aside className={`fixed md:relative inset-y-0 left-0 z-30 transform transition-transform duration-300 ${sidebarOpen ? 'translate-x-0 w-64' : '-translate-x-full md:translate-x-0 md:w-20'} bg-slate-900 text-white flex flex-col shadow-2xl md:shadow-xl`}>
+                        <div className="h-16 flex items-center justify-center border-b border-slate-800 relative shrink-0">
                             {sidebarOpen ? <h1 className="text-xl font-bold tracking-wider flex items-center gap-2"><div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center"><Icons.Activity /></div>HR<span className="text-blue-400">Portal</span></h1> : <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center"><Icons.Activity /></div>}
+                            {sidebarOpen && <button className="md:hidden absolute right-4 text-slate-400 hover:text-white" onClick={() => setSidebarOpen(false)}><Icons.XCircle size={20}/></button>}
                         </div>
-                        <nav className="flex-1 py-6 px-3 space-y-2">
+                        <nav className="flex-1 py-6 px-3 space-y-2 overflow-y-auto">
                             {[{ id: 'dashboard', label: '總覽儀表板', icon: Icons.Activity }, { id: 'employees', label: '資料管理 (上傳/雲端)', icon: Icons.Users }].map((item) => (
-                                <button key={item.id} onClick={() => setActiveTab(item.id)} className={`w-full flex items-center p-3 rounded-xl transition-all duration-200 ${activeTab === item.id ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}><item.icon />{sidebarOpen && <span className="ml-3 font-medium tracking-wide">{item.label}</span>}</button>
+                                <button key={item.id} onClick={() => { setActiveTab(item.id); if(window.innerWidth < 768) setSidebarOpen(false); }} className={`w-full flex items-center p-3 rounded-xl transition-all duration-200 ${activeTab === item.id ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}><item.icon />{sidebarOpen && <span className="ml-3 font-medium tracking-wide">{item.label}</span>}</button>
                             ))}
                         </nav>
                     </aside>
 
-                    <div className="flex-1 flex flex-col overflow-hidden">
-                        <header className="bg-white shadow-sm z-10 border-b border-slate-200">
-                            <div className="h-16 flex items-center justify-between px-6">
-                                <h2 className="text-lg font-bold text-slate-800">{activeTab === 'dashboard' ? '人力資源總覽' : '員工資料管理'}</h2>
-                                <div className="flex items-center gap-4"><div className="flex items-center gap-3 pl-4 border-l border-slate-200"><div className="text-right hidden sm:block"><p className="text-sm font-bold text-slate-700">Admin</p><p className="text-xs text-slate-500">HR Manager</p></div><div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold border border-blue-200">HR</div></div></div>
+                    <div className="flex-1 flex flex-col overflow-hidden w-full">
+                        <header className="bg-white shadow-sm z-10 border-b border-slate-200 shrink-0">
+                            <div className="h-16 flex items-center justify-between px-4 sm:px-6">
+                                <div className="flex items-center gap-3 min-w-0">
+                                    <button onClick={() => setSidebarOpen(!sidebarOpen)} className="md:hidden p-2 -ml-2 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors shrink-0">
+                                        <Icons.Menu />
+                                    </button>
+                                    <h2 className="text-base sm:text-lg font-bold text-slate-800 truncate">{activeTab === 'dashboard' ? '人力資源總覽' : '員工資料管理'}</h2>
+                                </div>
+                                <div className="flex items-center gap-2 sm:gap-4 shrink-0"><div className="flex items-center gap-3 pl-2 sm:pl-4 border-l border-slate-200"><div className="text-right hidden sm:block"><p className="text-sm font-bold text-slate-700">Admin</p><p className="text-xs text-slate-500">HR Manager</p></div><div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold border border-blue-200 text-sm sm:text-base">HR</div></div></div>
                             </div>
                             
                             {activeTab === 'dashboard' && (
-                                <div className="px-6 py-2 bg-blue-50 border-t border-blue-100 flex items-center gap-2 flex-wrap">
-                                    <span className="text-xs font-bold text-blue-700 flex items-center gap-1"><Icons.Filter /> 篩選條件:</span>
+                                <div className="px-4 sm:px-6 py-2 sm:py-3 bg-blue-50 border-t border-blue-100 flex items-center gap-2 flex-wrap shadow-inner">
+                                    <span className="text-xs font-bold text-blue-700 flex items-center gap-1 w-full sm:w-auto mb-1 sm:mb-0"><Icons.Filter size={14} /> 篩選條件:</span>
                                     
                                     {/* Config Button */}
                                     <button 
@@ -736,16 +762,16 @@
                             )}
                         </header>
 
-                        <main className="flex-1 overflow-x-hidden overflow-y-auto p-6 bg-slate-50">
+                        <main className="flex-1 overflow-x-hidden overflow-y-auto p-4 sm:p-6 bg-slate-50">
                             {activeTab === 'dashboard' && (
-                                <div className="animate-fade-in space-y-6">
+                                <div className="animate-fade-in space-y-4 sm:space-y-6">
                                     {/* AI Insights Block */}
                                     {dashboardConfig.insights && (
-                                    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mb-6">
-                                        <h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><Icons.Lightbulb className="text-yellow-500" /> 智慧決策洞察 (AI Insights)</h3>
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-100 mb-4 sm:mb-6">
+                                        <h3 className="text-base sm:text-lg font-bold text-slate-800 mb-3 sm:mb-4 flex items-center gap-2"><Icons.Lightbulb className="text-yellow-500" /> 智慧決策洞察 (AI Insights)</h3>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                                             {insights.map((insight, idx) => (
-                                                <div key={idx} className={`p-4 rounded-xl border-l-4 flex items-start gap-3 ${
+                                                <div key={idx} className={`p-3 sm:p-4 rounded-xl border-l-4 flex items-start gap-3 ${
                                                     insight.type === 'red' ? 'bg-red-50 border-red-500 text-red-800' :
                                                     insight.type === 'green' ? 'bg-emerald-50 border-emerald-500 text-emerald-800' :
                                                     insight.type === 'orange' ? 'bg-orange-50 border-orange-500 text-orange-800' :
@@ -753,7 +779,7 @@
                                                     insight.type === 'purple' ? 'bg-purple-50 border-purple-500 text-purple-800' :
                                                     'bg-slate-50 border-slate-400 text-slate-700'
                                                 }`}>
-                                                    <div className="mt-0.5 text-lg">
+                                                    <div className="mt-0.5 text-base sm:text-lg">
                                                         {insight.type === 'red' || insight.type === 'orange' ? '⚠️' : 
                                                          insight.type === 'green' ? '🛡️' : '💡'}
                                                     </div>
@@ -766,17 +792,17 @@
 
                                     {/* KPI Row */}
                                     {dashboardConfig.kpi && (
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between"><div className="flex justify-between items-start"><div><p className="text-sm font-medium text-slate-500">{Object.keys(filters).length > 0 ? '篩選後人數' : '在職總員工數'}</p><h3 className="text-3xl font-bold text-slate-800 mt-2">{Object.keys(filters).length > 0 ? filteredCount : totalCount}</h3></div><div className="p-3 bg-blue-50 text-blue-600 rounded-xl"><Icons.Users /></div></div></div>
-                                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between"><div className="flex justify-between items-start"><div><p className="text-sm font-medium text-slate-500">離職率 (年)</p><h3 className="text-3xl font-bold text-slate-800 mt-2 text-red-500">{turnoverMetrics.turnoverRate}%</h3></div><div className="p-3 bg-red-50 text-red-600 rounded-xl"><Icons.UserX /></div></div></div>
-                                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between"><div className="flex justify-between items-start"><div><p className="text-sm font-medium text-slate-500">留任率 (年)</p><h3 className="text-3xl font-bold text-slate-800 mt-2 text-emerald-500">{turnoverMetrics.retentionRate}%</h3></div><div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl"><Icons.UserCheck /></div></div></div>
-                                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between"><div className="flex justify-between items-start"><div><p className="text-sm font-medium text-slate-500">平均年資</p><h3 className="text-3xl font-bold text-slate-800 mt-2">{(filteredEmployees.reduce((acc, curr) => acc + calculateTenure(curr.hireDate, curr.leaveDate), 0) / (filteredCount || 1)).toFixed(1)} 年</h3></div><div className="p-3 bg-orange-50 text-orange-600 rounded-xl"><Icons.Clock /></div></div></div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+                                        <div className="bg-white p-4 sm:p-6 rounded-xl sm:rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between"><div className="flex justify-between items-start"><div><p className="text-xs sm:text-sm font-medium text-slate-500">{Object.keys(filters).length > 0 ? '篩選後人數' : '在職總員工數'}</p><h3 className="text-2xl sm:text-3xl font-bold text-slate-800 mt-1 sm:mt-2">{Object.keys(filters).length > 0 ? filteredCount : totalCount}</h3></div><div className="p-2 sm:p-3 bg-blue-50 text-blue-600 rounded-lg sm:rounded-xl"><Icons.Users /></div></div></div>
+                                        <div className="bg-white p-4 sm:p-6 rounded-xl sm:rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between"><div className="flex justify-between items-start"><div><p className="text-xs sm:text-sm font-medium text-slate-500">離職率 (年)</p><h3 className="text-2xl sm:text-3xl font-bold text-slate-800 mt-1 sm:mt-2 text-red-500">{turnoverMetrics.turnoverRate}%</h3></div><div className="p-2 sm:p-3 bg-red-50 text-red-600 rounded-lg sm:rounded-xl"><Icons.UserX /></div></div></div>
+                                        <div className="bg-white p-4 sm:p-6 rounded-xl sm:rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between"><div className="flex justify-between items-start"><div><p className="text-xs sm:text-sm font-medium text-slate-500">留任率 (年)</p><h3 className="text-2xl sm:text-3xl font-bold text-slate-800 mt-1 sm:mt-2 text-emerald-500">{turnoverMetrics.retentionRate}%</h3></div><div className="p-2 sm:p-3 bg-emerald-50 text-emerald-600 rounded-lg sm:rounded-xl"><Icons.UserCheck /></div></div></div>
+                                        <div className="bg-white p-4 sm:p-6 rounded-xl sm:rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between"><div className="flex justify-between items-start"><div><p className="text-xs sm:text-sm font-medium text-slate-500">平均年資</p><h3 className="text-2xl sm:text-3xl font-bold text-slate-800 mt-1 sm:mt-2">{(filteredEmployees.reduce((acc, curr) => acc + calculateTenure(curr.hireDate, curr.leaveDate), 0) / (filteredCount || 1)).toFixed(1)} 年</h3></div><div className="p-2 sm:p-3 bg-orange-50 text-orange-600 rounded-lg sm:rounded-xl"><Icons.Clock /></div></div></div>
                                     </div>
                                     )}
 
                                     {/* Pie Charts Row 1 */}
                                     {(dashboardConfig.deptChart || dashboardConfig.jobLevelChart) && (
-                                    <div className={`grid grid-cols-1 ${dashboardConfig.deptChart && dashboardConfig.jobLevelChart ? 'lg:grid-cols-2' : 'lg:grid-cols-1'} gap-6`}>
+                                    <div className={`grid grid-cols-1 ${dashboardConfig.deptChart && dashboardConfig.jobLevelChart ? 'lg:grid-cols-2' : 'lg:grid-cols-1'} gap-4 sm:gap-6`}>
                                         {dashboardConfig.deptChart && <ChartWithLegend title="部門人數佔比" data={deptChartData} icon={Icons.Briefcase} onSelect={(val) => toggleFilter('dept', [val])} />}
                                         {dashboardConfig.jobLevelChart && <ChartWithLegend title="職級結構" data={jobLevelChartData} icon={Icons.Award} onSelect={(val) => toggleFilter('jobLevel', val)} />}
                                     </div>
@@ -784,33 +810,33 @@
                                     
                                     {/* Pie Charts Row 2 & Bar Chart */}
                                     {(dashboardConfig.genderChart || dashboardConfig.ageChart) && (
-                                    <div className={`grid grid-cols-1 ${dashboardConfig.genderChart && dashboardConfig.ageChart ? 'lg:grid-cols-2' : 'lg:grid-cols-1'} gap-6`}>
+                                    <div className={`grid grid-cols-1 ${dashboardConfig.genderChart && dashboardConfig.ageChart ? 'lg:grid-cols-2' : 'lg:grid-cols-1'} gap-4 sm:gap-6`}>
                                         {dashboardConfig.genderChart && <ChartWithLegend title="性別比例" data={genderChartData} icon={Icons.Users} onSelect={(val) => toggleFilter('gender', val)} />}
                                         {dashboardConfig.ageChart && (
-                                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100"><h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><Icons.Users /> 年齡分佈</h3><div className="h-48 relative"><ChartComponent type="bar" data={ageChartData} options={barOptions} onElementClick={(val) => toggleFilter('ageGroup', val)} /></div></div>
+                                        <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-100"><h3 className="text-base sm:text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><Icons.Users /> 年齡分佈</h3><div className="h-48 sm:h-56 relative"><ChartComponent type="bar" data={ageChartData} options={barOptions} onElementClick={(val) => toggleFilter('ageGroup', val)} /></div></div>
                                         )}
                                     </div>
                                     )}
 
                                     {/* Bar Charts Row */}
                                     {(dashboardConfig.tenureChart || dashboardConfig.specialChart) && (
-                                    <div className={`grid grid-cols-1 ${dashboardConfig.tenureChart && dashboardConfig.specialChart ? 'lg:grid-cols-2' : 'lg:grid-cols-1'} gap-6`}>
-                                        {dashboardConfig.tenureChart && <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100"><h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><Icons.Clock /> 年資結構</h3><div className="h-64 relative"><ChartComponent type="bar" data={tenureChartData} options={barOptions} onElementClick={(val) => toggleFilter('tenureGroup', val)} /></div></div>}
-                                        {dashboardConfig.specialChart && <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100"><h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><Icons.Tag /> 特殊身分統計</h3><div className="h-64 relative"><ChartComponent type="bar" data={specialChartData} options={barOptions} onElementClick={(val) => toggleFilter('special', val)} /></div></div>}
+                                    <div className={`grid grid-cols-1 ${dashboardConfig.tenureChart && dashboardConfig.specialChart ? 'lg:grid-cols-2' : 'lg:grid-cols-1'} gap-4 sm:gap-6`}>
+                                        {dashboardConfig.tenureChart && <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-100"><h3 className="text-base sm:text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><Icons.Clock /> 年資結構</h3><div className="h-56 sm:h-64 relative"><ChartComponent type="bar" data={tenureChartData} options={barOptions} onElementClick={(val) => toggleFilter('tenureGroup', val)} /></div></div>}
+                                        {dashboardConfig.specialChart && <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-100"><h3 className="text-base sm:text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><Icons.Tag /> 特殊身分統計</h3><div className="h-56 sm:h-64 relative"><ChartComponent type="bar" data={specialChartData} options={barOptions} onElementClick={(val) => toggleFilter('special', val)} /></div></div>}
                                     </div>
                                     )}
 
                                     {/* Bottom Details Row */}
                                     {(dashboardConfig.identityChart || dashboardConfig.migrantStats || dashboardConfig.foreignStudentStats) && (
-                                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
                                         {dashboardConfig.identityChart && (
-                                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100"><h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><Icons.Tag /> 身分別統計</h3><div className="h-64 relative"><ChartComponent type="bar" data={identityChartData} options={horizontalBarOptions} onElementClick={(val) => toggleFilter('identity', val)} /></div></div>
+                                        <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-100"><h3 className="text-base sm:text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><Icons.Tag /> 身分別統計</h3><div className="h-56 sm:h-64 relative"><ChartComponent type="bar" data={identityChartData} options={horizontalBarOptions} onElementClick={(val) => toggleFilter('identity', val)} /></div></div>
                                         )}
                                         {dashboardConfig.migrantStats && (
-                                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100"><h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2 border-b pb-2"><Icons.Plane /> 外籍移工國籍統計 <span className="ml-auto text-sm bg-slate-100 px-2 py-1 rounded text-slate-600">共 {migrantTotal} 人</span></h3>{Object.keys(migrantWorkerStats).length > 0 ? (<div className="grid grid-cols-1 gap-3">{Object.entries(migrantWorkerStats).map(([nat, count]) => (<div key={nat} className="flex justify-between items-center p-3 bg-cyan-50 rounded-lg border border-cyan-100 cursor-pointer hover:bg-cyan-100" onClick={() => toggleFilter('nationality', nat)}><span className="font-medium text-cyan-800">{nat}</span><span className="font-bold text-cyan-700 bg-white px-2 py-1 rounded-md text-sm shadow-sm">{count} 人</span></div>))}</div>) : <div className="text-center py-8 text-slate-400">無資料</div>}</div>
+                                        <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-100"><h3 className="text-base sm:text-lg font-bold text-slate-800 mb-4 flex items-center gap-2 border-b pb-2"><Icons.Plane /> 外籍移工國籍統計 <span className="ml-auto text-xs sm:text-sm bg-slate-100 px-2 py-1 rounded text-slate-600">共 {migrantTotal} 人</span></h3>{Object.keys(migrantWorkerStats).length > 0 ? (<div className="grid grid-cols-1 gap-2 sm:gap-3">{Object.entries(migrantWorkerStats).map(([nat, count]) => (<div key={nat} className="flex justify-between items-center p-2 sm:p-3 bg-cyan-50 rounded-lg border border-cyan-100 cursor-pointer hover:bg-cyan-100" onClick={() => toggleFilter('nationality', nat)}><span className="font-medium text-sm sm:text-base text-cyan-800">{nat}</span><span className="font-bold text-cyan-700 bg-white px-2 py-1 rounded-md text-xs sm:text-sm shadow-sm">{count} 人</span></div>))}</div>) : <div className="text-center py-8 text-slate-400">無資料</div>}</div>
                                         )}
                                         {dashboardConfig.foreignStudentStats && (
-                                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100"><h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2 border-b pb-2"><Icons.Globe /> 僑外生國籍統計 <span className="ml-auto text-sm bg-slate-100 px-2 py-1 rounded text-slate-600">共 {studentTotal} 人</span></h3>{Object.keys(foreignStudentStats).length > 0 ? (<div className="grid grid-cols-1 gap-3">{Object.entries(foreignStudentStats).map(([nat, count]) => (<div key={nat} className="flex justify-between items-center p-3 bg-purple-50 rounded-lg border border-purple-100 cursor-pointer hover:bg-purple-100" onClick={() => toggleFilter('nationality', nat)}><span className="font-medium text-purple-800">{nat}</span><span className="font-bold text-purple-700 bg-white px-2 py-1 rounded-md text-sm shadow-sm">{count} 人</span></div>))}</div>) : <div className="text-center py-8 text-slate-400">無資料</div>}</div>
+                                        <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-100"><h3 className="text-base sm:text-lg font-bold text-slate-800 mb-4 flex items-center gap-2 border-b pb-2"><Icons.Globe /> 僑外生國籍統計 <span className="ml-auto text-xs sm:text-sm bg-slate-100 px-2 py-1 rounded text-slate-600">共 {studentTotal} 人</span></h3>{Object.keys(foreignStudentStats).length > 0 ? (<div className="grid grid-cols-1 gap-2 sm:gap-3">{Object.entries(foreignStudentStats).map(([nat, count]) => (<div key={nat} className="flex justify-between items-center p-2 sm:p-3 bg-purple-50 rounded-lg border border-purple-100 cursor-pointer hover:bg-purple-100" onClick={() => toggleFilter('nationality', nat)}><span className="font-medium text-sm sm:text-base text-purple-800">{nat}</span><span className="font-bold text-purple-700 bg-white px-2 py-1 rounded-md text-xs sm:text-sm shadow-sm">{count} 人</span></div>))}</div>) : <div className="text-center py-8 text-slate-400">無資料</div>}</div>
                                         )}
                                     </div>
                                     )}
@@ -818,14 +844,14 @@
                             )}
 
                             {activeTab === 'employees' && (
-                                <div className="animate-fade-in space-y-6">
-                                    <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-2xl p-8 text-white shadow-lg">
-                                        <h2 className="text-2xl font-bold mb-2 flex items-center gap-2"><Icons.Upload /> 匯入員工資料</h2>
-                                        <p className="text-blue-100 opacity-90 text-sm mb-4">格式 (依序): 姓名, 部門, 職稱, 國籍, 身分類別, 特殊身分, 性別, 生日, 到職日, 離職日...</p>
-                                        <label className="cursor-pointer bg-white text-blue-700 hover:bg-blue-50 font-bold py-2 px-6 rounded-xl shadow-md transition-all inline-flex items-center gap-2"><Icons.FileText /> 選擇檔案<input type="file" accept=".csv,.json,.xlsx,.xls" className="hidden" onChange={handleFileUpload} /></label>
+                                <div className="animate-fade-in space-y-4 sm:space-y-6">
+                                    <div className="bg-gradient-to-r from-blue-600 to-blue-800 rounded-2xl p-5 sm:p-8 text-white shadow-lg">
+                                        <h2 className="text-xl sm:text-2xl font-bold mb-2 flex items-center gap-2"><Icons.Upload /> 匯入員工資料</h2>
+                                        <p className="text-blue-100 opacity-90 text-xs sm:text-sm mb-4">格式 (依序): 姓名, 部門, 職稱, 國籍, 身分類別, 特殊身分, 性別, 生日, 到職日, 離職日...</p>
+                                        <label className="cursor-pointer bg-white text-blue-700 hover:bg-blue-50 font-bold py-2 px-4 sm:px-6 rounded-xl shadow-md transition-all inline-flex items-center gap-2 text-sm sm:text-base"><Icons.FileText /> 選擇檔案<input type="file" accept=".csv,.json,.xlsx,.xls" className="hidden" onChange={handleFileUpload} /></label>
                                     </div>
                                     <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-                                        <div className="p-6 border-b border-slate-100 flex justify-between items-center"><h3 className="text-lg font-bold text-slate-800">完整員工名冊 ({employees.length} 筆)</h3>{employees.some(e => e.error) && <span className="text-red-500 text-sm font-bold flex items-center gap-1"><Icons.AlertTriangle /> 有異常資料請修正</span>}</div>
+                                        <div className="p-4 sm:p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-2"><h3 className="text-base sm:text-lg font-bold text-slate-800">完整員工名冊 ({employees.length} 筆)</h3>{employees.some(e => e.error) && <span className="text-red-500 text-xs sm:text-sm font-bold flex items-center gap-1"><Icons.AlertTriangle /> 有異常資料請修正</span>}</div>
                                         <div className="overflow-x-auto">
                                             <table className="w-full text-left text-sm text-slate-600 whitespace-nowrap">
                                                 <thead className="bg-slate-50 text-slate-500 font-medium"><tr>{['狀態/備註','姓名','部門','職稱','性別','身分類別','特殊身分','國籍','年齡(歲)','年資(年)'].map(h=><th key={h} className="px-6 py-3">{h}</th>)}</tr></thead>
